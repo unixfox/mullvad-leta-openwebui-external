@@ -55,10 +55,12 @@ class SearchHandler(BaseHTTPRequestHandler):
                 debug_print("Data node:", json.dumps(data_node, indent=2))
                 
                 if len(data_node) > 3:
-                    items = data_node[3]  # Array of result indices
+                    items = data_node[3]  # Array of result indices or string
                     debug_print("Items array:", items)
                     
+                    # Handle both cases: items as array of indices or as string
                     if isinstance(items, list):
+                        # Cached response with array of indices
                         for i in range(min(len(items), count)):
                             idx = items[i]
                             debug_print(f"Processing index {idx}")
@@ -80,6 +82,25 @@ class SearchHandler(BaseHTTPRequestHandler):
                                 if all(isinstance(v, str) for v in result.values()):
                                     search_results.append(result)
                                     debug_print(f"Added result: {result}")
+                                else:
+                                    debug_print(f"Skipped result due to type mismatch: {result}")
+                    else:
+                        # Non-cached response, need to find the first result structure
+                        for i in range(4, len(data_node) - 3):
+                            if isinstance(data_node[i], dict) and 'link' in data_node[i]:
+                                result = {
+                                    "link": data_node[i + 1],
+                                    "title": data_node[i + 2],
+                                    "snippet": data_node[i + 3]
+                                }
+                                debug_print(f"Result before type check: {result}")
+                                
+                                # Only add if we have all required fields and they are strings
+                                if all(isinstance(v, str) for v in result.values()):
+                                    search_results.append(result)
+                                    debug_print(f"Added result: {result}")
+                                    if len(search_results) >= count:
+                                        break
                                 else:
                                     debug_print(f"Skipped result due to type mismatch: {result}")
             
