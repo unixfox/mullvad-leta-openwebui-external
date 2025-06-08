@@ -4,6 +4,11 @@ import requests
 from urllib.parse import parse_qs, urlparse
 import os
 
+def debug_print(*args, **kwargs):
+    """Print debug information only if DEBUG environment variable is set to 'true' or '1'"""
+    if os.getenv('DEBUG', '').lower() in ['true', '1']:
+        print(*args, **kwargs)
+
 class SearchHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -47,13 +52,16 @@ class SearchHandler(BaseHTTPRequestHandler):
             search_results = []
             if leta_data.get('type') == 'data' and len(leta_data.get('nodes', [])) > 2:
                 data_node = leta_data['nodes'][2]['data']
+                debug_print("Data node:", json.dumps(data_node, indent=2))
                 
                 if len(data_node) > 3:
                     items = data_node[3]  # Array of result indices
+                    debug_print("Items array:", items)
                     
                     if isinstance(items, list):
                         for i in range(min(len(items), count)):
                             idx = items[i]
+                            debug_print(f"Processing index {idx}")
                             
                             if isinstance(idx, int) and idx + 3 < len(data_node):
                                 # The data structure is:
@@ -66,10 +74,16 @@ class SearchHandler(BaseHTTPRequestHandler):
                                     "title": data_node[idx + 2],
                                     "snippet": data_node[idx + 3]
                                 }
+                                debug_print(f"Result before type check: {result}")
                                 
                                 # Only add if we have all required fields and they are strings
                                 if all(isinstance(v, str) for v in result.values()):
                                     search_results.append(result)
+                                    debug_print(f"Added result: {result}")
+                                else:
+                                    debug_print(f"Skipped result due to type mismatch: {result}")
+            
+            debug_print("Final search results:", json.dumps(search_results, indent=2))
             
             # Send response
             self.send_response(200)
@@ -86,7 +100,8 @@ def run_server(port=8000):
     server_address = ('', port)
     httpd = HTTPServer(server_address, SearchHandler)
     search_engine = os.getenv('SEARCH_ENGINE', 'google').lower()
-    print(f"Starting server on port {port} with search engine: {search_engine}...")
+    debug_mode = os.getenv('DEBUG', '').lower() in ['true', '1']
+    print(f"Starting server on port {port} with search engine: {search_engine} (debug: {'enabled' if debug_mode else 'disabled'})...")
     httpd.serve_forever()
 
 if __name__ == '__main__':
