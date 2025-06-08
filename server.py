@@ -5,6 +5,13 @@ from urllib.parse import parse_qs, urlparse
 import os
 
 class SearchHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b'OK')
+        return
+
     def do_POST(self):
         # Read the request body
         content_length = int(self.headers['Content-Length'])
