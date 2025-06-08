@@ -23,4 +23,4 @@ ENV HOME=/home/appuser
 ENV PYTHONUNBUFFERED=1
 
 # Run your Python script
-CMD ["./wait-for-port.sh", "python", "server.py"]
+CMD ["python", "server.py"]
